@@ -10,7 +10,6 @@ requests (para interagir com a API)
 csv e json (para manipulação de dados e exportação para CSV)
 Para instalar as bibliotecas necessárias, execute:
 
-bash
 Copiar código
 pip install typer requests
 Utilização
@@ -28,46 +27,52 @@ Comandos Disponíveis
 Os comandos estão implementados através da biblioteca Typer para simplificar o uso da CLI.
 
 1. Listagem dos Empregos Mais Recentes
-bash
 Copiar código
+
 python nome_do_script.py top --n <numero_de_empregos> [--export-csv]
 Exemplo:
 
-bash
 Copiar código
+
 python nome_do_script.py top --n 10 --export-csv
+
 Este comando exibe os N empregos mais recentes e, se especificado, exporta os resultados para top_jobs.csv.
 
 2. Pesquisa de Empregos por Cidade e Empresa
-bash
+
 Copiar código
+
 python nome_do_script.py search --city <cidade> --company <empresa> [--export-csv] [--n <numero_de_empregos>]
 Exemplo:
 
-bash
+
 Copiar código
+
 python nome_do_script.py search --city "Lisboa" --company "ExemploTech" --export-csv --n 10
 Este comando exibe os empregos que correspondem à cidade e empresa indicadas, com a opção de exportação para CSV.
 
 3. Extração de Salário por ID de Vaga
-bash
+
 Copiar código
+
 python nome_do_script.py salary --job-id <ID_da_vaga>
 Exemplo:
 
-bash
+
 Copiar código
+
 python nome_do_script.py salary --job-id 12345
 Este comando exibe o salário para a vaga especificada pelo ID.
 
 4. Pesquisa de Empregos por Habilidades
-bash
+
 Copiar código
 python nome_do_script.py skills --skills <habilidade1> <habilidade2> --start-date <AAAA-MM-DD> --end-date <AAAA-MM-DD> [--export-csv] [--n <numero_de_empregos>]
 Exemplo:
 
-bash
+
 Copiar código
+
 python nome_do_script.py skills --skills "Python" "SQL" "Machine Learning" --start-date "2023-01-01" --end-date "2023-12-31" --export-csv --n 10
 Este comando filtra empregos que requerem todas as habilidades especificadas num intervalo de datas, com a opção de exportação para CSV.
 
@@ -82,4 +87,3 @@ salary: Comando que exibe o salário de uma vaga pelo ID.
 skills: Comando que pesquisa empregos com base numa lista de habilidades e intervalo de datas.
 Notas
 Documentação da API: Aconselha-se que explore a documentação oficial para conhecer as rotas, parâmetros e tipos de dados retornados pela API.
-Teste da API: Ferramentas como o Postman podem ser úteis para testar a API antes de implementar o código.
