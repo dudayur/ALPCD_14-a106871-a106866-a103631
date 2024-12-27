@@ -19,6 +19,7 @@ headers = {
 # Inicialização do Typer
 app = typer.Typer()
 
+
 def fetch_jobs(params: dict, max_results: int = 100) -> list:
     """Função para obter trabalhos com suporte a paginação."""
     params['api_key'] = API_KEY
@@ -47,6 +48,7 @@ def fetch_jobs(params: dict, max_results: int = 100) -> list:
 
     return all_results[:max_results]
 
+
 def fetch_job(job_id: int) -> dict:
     """Obtém informações detalhadas de um trabalho específico."""
     params = {
@@ -64,6 +66,7 @@ def fetch_job(job_id: int) -> dict:
     else:
         print(f"Erro na requisição: {response.status_code}")
         return {}
+
 
 def save_to_csv(vagas, nome_arquivo="data.csv",
                 colunas=["titulo", "empresa", "descricao", "data_de_publicacao", "salario", "localizacao"]):
@@ -84,10 +87,25 @@ def save_to_csv(vagas, nome_arquivo="data.csv",
             except UnicodeEncodeError as e:
                 print(f"Erro ao salvar linha no CSV: {e}")
 
+
+def export_statistics_to_csv(data, filename):
+    """Exporta os dados de estatísticas de zona e tipo de trabalho para um CSV."""
+    colunas = ["Zona", "Tipo de Trabalho", "Nº de Vagas"]
+    with open(filename, mode="w", newline='', encoding='utf-8') as arquivo_csv:
+        writer = csv.DictWriter(arquivo_csv, fieldnames=colunas)
+        writer.writeheader()
+        for row in data:
+            try:
+                writer.writerow(row)
+            except UnicodeEncodeError as e:
+                print(f"Erro ao salvar linha no CSV: {e}")
+
+
 def extract_wage_from_description(description: str) -> Optional[str]:
     """Extrai o salário da descrição usando expressões regulares."""
     matches = re.findall(r"(\d{1,3}(?:\.\d{3})*,\d{2})", description)
     return matches[0] if matches else None
+
 
 @app.command()
 def top(n: int, export_csv: Optional[bool] = False):
@@ -104,6 +122,7 @@ def top(n: int, export_csv: Optional[bool] = False):
         print("Arquivo CSV 'top_jobs.csv' criado com sucesso!")
     else:
         print("Exportação para CSV não realizada, use o parâmetro --export-csv para exportar os dados.")
+
 
 @app.command()
 def search(city: str, company: str, export_csv: Optional[bool] = False, n: int = 10):
@@ -125,6 +144,7 @@ def search(city: str, company: str, export_csv: Optional[bool] = False, n: int =
 
     return filtered_jobs
 
+
 @app.command()
 def salary(job_id: int):
     """Extrai o salário de uma vaga pelo job_id."""
@@ -133,6 +153,7 @@ def salary(job_id: int):
     if not wage:
         wage = extract_wage_from_description(job.get("description", ""))
     print(wage if wage else "Salário não especificado")
+
 
 @app.command()
 def skills(skills: List[str], start_date: str, end_date: str, export_csv: Optional[bool] = False, n: int = 10):
@@ -166,6 +187,44 @@ def skills(skills: List[str], start_date: str, end_date: str, export_csv: Option
             colunas=["titulo", "empresa", "descricao", "data_de_publicacao", "salario", "localizacao"]
         )
         print("Arquivo CSV 'skills_jobs.csv' criado com sucesso!")
+
+
+@app.command()
+def statistics_zone():
+    """Cria um CSV com a contagem de vagas por zona e tipo de trabalho."""
+    jobs = fetch_jobs({"limit": 100})  # Ajustar o limite conforme necessário
+    stats = []
+
+    for job in jobs:
+        for location in job.get("locations", []):
+            zone = location.get("name", "Unknown")
+            job_type = job.get("title", "Unknown")
+            stats.append({
+                "Zona": zone,
+                "Tipo de Trabalho": job_type,
+                "Nº de Vagas": 1
+            })
+
+    # Consolidar dados para contagem correta
+    consolidated_stats = {}
+    for entry in stats:
+        key = (entry["Zona"], entry["Tipo de Trabalho"])
+        if key not in consolidated_stats:
+            consolidated_stats[key] = entry
+            consolidated_stats[key]["Nº de Vagas"] = 0
+        consolidated_stats[key]["Nº de Vagas"] += 1
+
+    # Transformar em lista para CSV
+    final_rows = [
+        {"Zona": key[0], "Tipo de Trabalho": key[1], "Nº de Vagas": value["Nº de Vagas"]}
+        for key, value in consolidated_stats.items()
+    ]
+
+    # Exportar para CSV
+    export_statistics_to_csv(final_rows, "statistics_zone.csv")
+    print("Ficheiro de exportação criado com sucesso.")
+
+
 
 if __name__ == "__main__":
     app()
