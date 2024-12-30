@@ -133,6 +133,7 @@ def search(city: str, company: str, export_csv: Optional[bool] = False, n: int =
         if any(loc.get("name") == city for loc in job.get("locations", [])) and
            job.get("company", {}).get("name") == company
     ]
+    print(json.dumps(filtered_jobs, indent=4, ensure_ascii=False))
 
     if export_csv:
         save_to_csv(
