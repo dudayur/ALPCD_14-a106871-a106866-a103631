@@ -20,7 +20,7 @@ headers = {
 app = typer.Typer()
 
 
-def fetch_jobs(params: dict, max_results: int = 100) -> list:
+def fetch_jobs(params: dict, max_results: int = 10000) -> list:
     """Função para obter trabalhos com suporte a paginação."""
     params['api_key'] = API_KEY
     params['limit'] = 20  # Limite de itens por página
@@ -193,7 +193,7 @@ def skills(skills: List[str], start_date: str, end_date: str, export_csv: Option
 @app.command()
 def statistics_zone():
     """Cria um CSV com a contagem de vagas por zona e tipo de trabalho."""
-    jobs = fetch_jobs({"limit": 100})  # Ajustar o limite conforme necessário
+    jobs = fetch_jobs({"limit": 10000})  # Ajustar o limite conforme necessário
     stats = []
 
     for job in jobs:
