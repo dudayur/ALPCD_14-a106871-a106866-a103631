@@ -105,6 +105,10 @@ def extract_wage_from_description(description: str) -> Optional[str]:
     """Extrai o salário da descrição usando expressões regulares."""
     matches = re.findall(r"(\d{1,3}(?:\.\d{3})*,\d{2})", description)
     return matches[0] if matches else None
+    
+def get_job_url(job: str) -> str: 
+    formatted_job = job.lower().replace(" ", "-") 
+    return f"https://www.ambitionbox.com/jobs/{formatted_job}-jobs-prf"
 
 
 @app.command()
@@ -225,7 +229,76 @@ def statistics_zone():
     export_statistics_to_csv(final_rows, "statistics_zone.csv")
     print("Ficheiro de exportação criado com sucesso.")
 
+@app.command()
+def list_skills(job: str): 
+    job_url = get_job_url(job)
+    
+
+    service=Service(executable_path="chromedriver.exe")
+    driver=webdriver.Chrome(service=service)
+
+
+    driver.get(job_url)
+    wait = WebDriverWait(driver, 15)
+    target_button = wait.until(EC.presence_of_element_located((By.XPATH, "//button[@arialabel='Skill']")))
+    target_button.click()
+    time.sleep(3)
+    skills_list = []
+    numbers_list = []
+
+    skills_elements = driver.find_elements(By.XPATH, "//span[@class='label']")
+    numbers = driver.find_elements(By.XPATH, "//span[contains(text(),'(')]") 
+    for i in range(min(10, len(skills_elements))):
+        skill = skills_elements[i].text.strip()  # Get the skill name
+        number = numbers[i].text.strip('()')  # Clean number from parentheses
+        skills_list.append({"skill": skill, "count": int(number)})  # Append as dict
+
+    json_output = json.dumps(skills_list)
+
+    print(json_output)
+
+    time.sleep(3)
+    driver.quit
+
+@app.command()
+def getd(job_id: Annotated[int, typer.Argument(help="ID do trabalho")], export: Optional[bool] = False):
+
+ 
+    url = f"https://api.itjobs.pt/job/get.json?api_key=ee176fa9456283ab9c42f357b036e236&id={job_id}"
+    headers = {'User-Agent': "ALPCD_5", 'Cookie': 'itjobs_pt=3cea3cc1f4c6a847f8c459367edf7143:94de45f2a55a15b2672adf8788ac8072e7bfd5c5'}  # Necessário por 'User-Agent' nos headers
+    job_data = requests.get(url, headers)
+    if not job_data:
+        print(f"Não foi possível encontrar o jobID {job_id}. Verifique se o ID é válido.")
+        return
+
+
+    company_name = job_data.get("company", {}).get("name", "Desconhecida")
+    if company_name == "Desconhecida":
+        print("Não foi possível obter o nome da empresa.")
+        return
+    modified_company_name = re.sub(r'(.)( *Portugal)(.*)', r"\1", company_name)
+    url=f"https://www.careerbliss.com/{re.sub(' ', '+', modified_company_name).lower()}/"
+    response = requests.get(url)
+    print(response.status_code)
+    soup=BeautifulSoup(response.content, "html.parser")
+    rank=soup.find("span",class_="value").text
+    all=soup.find("div",class_="description profile-module")
+    description=all.find("p").text
+    pattern = re.compile(r'benefits?.*?employees?.*')
+    benefits_paragraphs = soup.find_all("p", string=pattern)
+    benefits = [p.get_text() for p in benefits_paragraphs]
+
+    data = {
+        "rank": rank,
+        "description": description,
+        "benefits": benefits
+    }
+    print(json.dumps(data, indent=4, ensure_ascii=False))
+
+
 
 
 if __name__ == "__main__":
     app()
+
+
