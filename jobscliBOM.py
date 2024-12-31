@@ -193,6 +193,53 @@ def skills(skills: List[str], start_date: str, end_date: str, export_csv: Option
         )
         print("Arquivo CSV 'skills_jobs.csv' criado com sucesso!")
 
+@app.command()
+def get_info(job_id: Annotated[int, typer.Argument(help="ID do trabalho")], export: Optional[bool] = False):
+    """
+    Busca informações de uma vaga específica (jobID) e enriquece com dados da empresa do AmbitionBox.
+    """
+    url = f"https://api.itjobs.pt/job/get.json?api_key=ee176fa9456283ab9c42f357b036e236&id={job_id}"
+    headers = {'User-Agent': "ALPCD_5", 'Cookie': 'itjobs_pt=3cea3cc1f4c6a847f8c459367edf7143:94de45f2a55a15b2672adf8788ac8072e7bfd5c5'}  # Necessário por 'User-Agent' nos headers
+    job_data = requests.get(url, headers)
+    if not job_data:
+        print(f"Não foi possível encontrar o jobID {job_id}. Verifique se o ID é válido.")
+        return
+
+    company_name = job_data.get("company", {}).get("name", "Desconhecida")
+    if company_name == "Desconhecida":
+        print("Não foi possível obter o nome da empresa.")
+        return
+    modified_company_name = re.sub(r'(.)( *Portugal)(.*)', r"\1", company_name)
+
+
+    ambitionbox_url = f"https://www.ambitionbox.com/overview/{re.sub(' ', '-', modified_company_name).lower()}-overview"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:98.0) Gecko/20100101 Firefox/98.0",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Cache-Control": "max-age=0",
+    }
+    soup = requests.get(ambitionbox_url, headers, get_soup=True)
+
+    rank=soup.find("span",class_="css-1jxf684 text-primary-text font-pn-700 text-xl !text-base").text
+    description=soup.find("div",class_="css-146c3p1 font-pn-400 text-sm text-neutral mb-2").text
+    benefits_all=soup.find_all("div",class_="css-146c3p1 font-pn-400 text-sm text-primary-text")
+    benefits = [p.get_text() for p in benefits_all[4:]]
+
+
+    data = {
+    "rank": rank,
+    "description": description,
+    "benefits": benefits
+    }
+    print(json.dumps(data, indent=4, ensure_ascii=False))
 
 @app.command()
 def statistics_zone():
